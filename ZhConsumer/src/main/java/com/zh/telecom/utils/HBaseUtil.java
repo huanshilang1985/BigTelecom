@@ -66,8 +66,11 @@ public class HBaseUtil {
             //字段描述器 HColumnDescriptor
             hd.addFamily(new HColumnDescriptor(cf));
         }
-//        hd.addCoprocessor("hbase.CalleeWriteObserver");  //协处理器
+        //协处理器
+//        hd.addCoprocessor("com.zh.telecom.hbase.CalleeWriteObserver");
+        //创建表
         admin.createTable(hd, genSplitKeys(regions));
+        //关闭对象
         close(admin,connection);
     }
 
@@ -90,7 +93,7 @@ public class HBaseUtil {
      * 生成rowkey
      * rowkey是唯一的，可以快速定位数据，需要按照业务需求设计
      * regionCode_caller_buildTime_callee_flag_duration
-     * @param regionCode 分区编码
+     * @param regionCode 散列的键
      * @param caller     主叫手机号
      * @param buildTime  呼叫时间
      * @param callee     被叫手机号
@@ -110,21 +113,6 @@ public class HBaseUtil {
     }
 
     /**
-     * 关闭Admin对象和connection对象
-     * @param admin      Admin对象
-     * @param connection connection对象
-     * @throws IOException
-     */
-    private static void close(Admin admin, Connection connection) throws IOException {
-        if(admin != null){
-            admin.close();
-        }
-        if(connection != null){
-            connection.close();
-        }
-    }
-
-    /**
      * 分区键，用于创建region，防止数据倾斜
      * @param regions
      * @return
@@ -140,7 +128,7 @@ public class HBaseUtil {
         }
         // 生成byte[][]类型的分区键的时候，一定要保证分区键是有序的
         byte[][] splitKeys = new byte[regions][];
-        TreeSet<byte[]> treeSet = new TreeSet<>(Bytes.BYTES_COMPARATOR);
+        TreeSet<byte[]> treeSet = new TreeSet<byte[]>(Bytes.BYTES_COMPARATOR);
         for (int i = 0; i < regions; i++) {
             treeSet.add(Bytes.toBytes(keys[i]));
         }
@@ -153,5 +141,47 @@ public class HBaseUtil {
         }
         return splitKeys;
     }
+
+    /**
+     * 生成分区号
+     * @param caller    主叫手机号
+     * @param buildTime 呼叫时间
+     * @param regions   region个数
+     * @return 返回分区号
+     */
+    public static String genRegionCode(String caller, String buildTime, int regions){
+        int length = caller.length();
+        //取出后4位号码
+        String lastPhone = caller.substring(length - 4);
+        //取出年月，buildTime 2018-06-22 13:27:21
+        String ym = buildTime.replaceAll("-", "")
+                .replaceAll(":", "")
+                .replaceAll(" ", "")
+                .substring(0, 6);
+        //离散操作：异或、哈希
+        Integer x = Integer.valueOf(lastPhone) ^ Integer.valueOf(ym);
+        int y = x.hashCode();
+        //生成分区号
+        int regionCode = y % regions;
+        // 格式化分区好
+        DecimalFormat df = new DecimalFormat("00");
+        return df.format(regionCode);
+    }
+
+    /**
+     * 关闭Admin对象和connection对象
+     * @param admin      Admin对象
+     * @param connection connection对象
+     * @throws IOException
+     */
+    private static void close(Admin admin, Connection connection) throws IOException {
+        if(admin != null){
+            admin.close();
+        }
+        if(connection != null){
+            connection.close();
+        }
+    }
+
 
 }

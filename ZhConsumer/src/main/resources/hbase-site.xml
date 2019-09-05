@@ -39,7 +39,11 @@
 	<!-- zookeeper集群的位置 -->
 	<property>
 		<name>hbase.zookeeper.quorum</name>
-		<value>hd101:2181,hd102:2181,hd103:2181</value>
+		<value>hd101,hd102,hd103</value>
+	</property>
+	<property>
+		<name>hbase.zookeeper.property.clientPort</name>
+		<value>2181</value>
 	</property>
 	<!-- hbase的元数据信息存储在zookeeper的位置 -->
 	<property>
@@ -47,8 +51,19 @@
 		<value>/opt/hd/zookeeper-3.4.10/zkData</value>
 	</property>
 	<!-- HBase协处理器 -->
+	<!--<property>-->
+		<!--<name>hbase.coprocessor.region.classes</name>-->
+		<!--<value>com.zh.telecom.hbase.CalleeWriteObserver</value>-->
+	<!--</property>-->
+
+	<!-- 行锁超时时间，单位毫秒，默认1分钟 -->
+	<!--<property>-->
+		<!--<name>hbase.regionserver.lease.period</name>-->
+		<!--<value>12000</value>-->
+	<!--</property>-->
+	<!-- Scan缓存区大小，默认1 -->
 	<property>
-		<name>hbase.coprocessor.region.classes</name>
-		<value>com.zh.telecom.hbase.CalleeWriteObserver</value>
+		<name>hbase.client.scanner.caching</name>
+		<value>10</value>
 	</property>
 </configuration>
